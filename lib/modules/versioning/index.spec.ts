@@ -208,7 +208,7 @@ describe('modules/versioning/index', () => {
       }) => {
         // Setup mock versions
         const mockVersions: ReleaseResult = {
-          releases: latestVersions.map((v) => ({
+          releases: latestVersions.map((v: { version: string }) => ({
             version: v.version,
             releaseTimestamp: asTimestamp('2023-01-01T00:00:00.000Z')!,
           })),
