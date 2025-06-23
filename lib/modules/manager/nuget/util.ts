@@ -141,6 +141,18 @@ export async function getConfiguredRegistries(
     }
   }
 
+  // Deduplicate registries with #procolVersion=3
+  // Keep any which include sourceMappedPackagePatterns
+  const plainRegistryUrls = registries
+    .filter((r) => !r.sourceMappedPackagePatterns)
+    .map((r) => r.url);
+  registries = registries.filter((r) => {
+    return (
+      r.sourceMappedPackagePatterns ??
+      !plainRegistryUrls.includes(`${r.url}#protocolVersion=3`)
+    );
+  });
+
   return registries;
 }
 
@@ -197,6 +209,7 @@ export function applyRegistries(
  * Sorts patterns by specificity:
  * 1. Exact match patterns
  * 2. Wildcard match patterns
+ * The longest pattern has precedence.
  */
 function sortPatterns(
   a: [string, Registry[]],
@@ -210,7 +223,10 @@ function sortPatterns(
     return -1;
   }
 
-  return a[0].localeCompare(b[0]) * -1;
+  const aTrim = a[0].slice(0, -1);
+  const bTrim = b[0].slice(0, -1);
+
+  return aTrim.localeCompare(bTrim) * -1;
 }
 
 export async function findGlobalJson(

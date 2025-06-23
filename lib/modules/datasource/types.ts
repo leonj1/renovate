@@ -51,9 +51,11 @@ export interface GetPkgReleasesConfig {
   replacementName?: string;
   replacementVersion?: string;
   constraintsFiltering?: ConstraintsFilter;
+  registryStrategy?: RegistryStrategy;
 }
 
 export interface Release {
+  changelogContent?: string;
   changelogUrl?: string;
   checksumUrl?: string;
   downloadUrl?: string;
@@ -80,6 +82,7 @@ export interface ReleaseResult {
   isPrivate?: boolean;
   releases: Release[];
   tags?: Record<string, string> | undefined;
+  changelogContent?: string;
   // URL metadata
   changelogUrl?: string;
   dependencyUrl?: string;
@@ -92,6 +95,8 @@ export interface ReleaseResult {
   replacementVersion?: string;
   lookupName?: string;
   packageScope?: string;
+  mostRecentTimestamp?: Timestamp;
+  isAbandoned?: boolean;
 }
 
 export interface PostprocessReleaseConfig {

@@ -150,7 +150,10 @@
     'image.toolkit.fluxcd.io/v1beta1',
     'image.toolkit.fluxcd.io/v1beta2',
   ],
-  OCIRepository: ['source.toolkit.fluxcd.io/v1beta2'],
+  OCIRepository: [
+    'source.toolkit.fluxcd.io/v1beta2',
+    'source.toolkit.fluxcd.io/v1',
+  ],
   Provider: [
     'notification.toolkit.fluxcd.io/v1beta2',
     'notification.toolkit.fluxcd.io/v1beta3',
