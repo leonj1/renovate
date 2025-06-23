@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getOptions } from '../../config/options';
+import { logger } from '../../logger';
 import { loadModules } from '../../util/modules';
 import { registry } from '../../util/registry';
 import { asTimestamp } from '../../util/timestamp';
@@ -187,6 +188,32 @@ describe('modules/versioning/index', () => {
     beforeEach(() => {
       // Mock the registry lookup using Vitest's vi
       vi.spyOn(registry, 'getPkgReleases').mockResolvedValue(mockVersions);
+    });
+
+    it('should handle error when getPkgReleases fails', async () => {
+      const error = new Error('Failed to fetch releases');
+      vi.spyOn(registry, 'getPkgReleases').mockRejectedValue(error);
+      const debugSpy = vi.spyOn(logger, 'debug');
+
+      const config = {
+        versioning: 'semver',
+        constraints: {
+          offset: -1,
+        },
+      };
+
+      const result = await getNewValue({
+        currentValue: '1.0.0',
+        rangeStrategy: 'replace',
+        currentVersion: '1.0.0',
+        config,
+      });
+
+      expect(result).toBe('1.0.0');
+      expect(debugSpy).toHaveBeenCalledWith(
+        { error, currentValue: '1.0.0', versioning: 'semver' },
+        'Failed to fetch package releases, returning currentValue',
+      );
     });
 
     it.each`

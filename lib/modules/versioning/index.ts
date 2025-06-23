@@ -1,3 +1,4 @@
+import { logger } from '../../logger';
 import { registry } from '../../util/registry';
 import type { Release } from '../datasource/types';
 import versionings from './api';
@@ -55,7 +56,17 @@ export async function getNewValue({
   config,
 }: GetNewValueConfig): Promise<string> {
   const versioning = get(config.versioning);
-  const versions = await registry.getPkgReleases();
+
+  let versions;
+  try {
+    versions = await registry.getPkgReleases();
+  } catch (error) {
+    logger.debug(
+      { error, currentValue, versioning: config.versioning },
+      'Failed to fetch package releases, returning currentValue',
+    );
+    return currentValue;
+  }
 
   if (!versions.releases?.length) {
     return currentValue;
