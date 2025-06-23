@@ -1,12 +1,12 @@
 import type { ReleaseResult } from '../modules/datasource/types';
 
 export const registry = {
-  async getPkgReleases(): Promise<ReleaseResult> {
-    return {
+  getPkgReleases(): Promise<ReleaseResult> {
+    return Promise.resolve({
       releases: [],
       sourceUrl: '',
       homepage: '',
       registryUrl: '',
-    };
+    });
   },
 };
