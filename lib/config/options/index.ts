@@ -1595,6 +1595,17 @@ const options: RenovateOptions[] = [
     env: false,
   },
   {
+    name: 'offsetLevel',
+    description:
+      'Specifies the semantic version level (major, minor, or patch) to apply n-1 versioning offset to.',
+    type: 'string',
+    allowedValues: ['major', 'minor', 'patch'],
+    stage: 'package',
+    parents: ['packageRules'],
+    cli: false,
+    env: false,
+  },
+  {
     name: 'changelogUrl',
     description:
       'Set a custom URL for the changelog. Renovate will put this URL in the PR body text.',

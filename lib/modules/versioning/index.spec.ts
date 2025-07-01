@@ -267,5 +267,125 @@ describe('modules/versioning/index', () => {
         expect(result).toBe(expected);
       },
     );
+
+    describe('semver-level n-1 versioning', () => {
+      it.each`
+        currentValue | availableVersions                                                           | offsetLevel | offset | expected   | description
+        ${'1.0.0'}   | ${['1.0.0', '1.1.0', '2.0.0', '2.1.0', '3.0.0', '3.1.0']}                   | ${'major'}  | ${-1}  | ${'2.1.0'} | ${'n-1 major: latest 2.x.x version'}
+        ${'1.0.0'}   | ${['1.0.0', '1.1.0', '2.0.0', '2.1.0', '3.0.0', '3.1.0']}                   | ${'major'}  | ${-2}  | ${'1.1.0'} | ${'n-2 major: latest 1.x.x version'}
+        ${'2.1.0'}   | ${['2.1.0', '2.1.1', '2.2.0', '2.2.1', '2.3.0', '2.3.1']}                   | ${'minor'}  | ${-1}  | ${'2.2.1'} | ${'n-1 minor: latest 2.2.x version'}
+        ${'2.1.0'}   | ${['2.1.0', '2.1.1', '2.2.0', '2.2.1', '2.3.0', '2.3.1']}                   | ${'minor'}  | ${-2}  | ${'2.1.1'} | ${'n-2 minor: latest 2.1.x version'}
+        ${'2.2.1'}   | ${['2.2.1', '2.2.2', '2.2.3', '2.2.4', '2.2.5']}                            | ${'patch'}  | ${-1}  | ${'2.2.4'} | ${'n-1 patch: previous patch version'}
+        ${'2.2.1'}   | ${['2.2.1', '2.2.2', '2.2.3', '2.2.4', '2.2.5']}                            | ${'patch'}  | ${-2}  | ${'2.2.3'} | ${'n-2 patch: second previous patch'}
+        ${'1.0.0'}   | ${['1.0.0', '1.1.0', '1.2.0', '2.0.0']}                                     | ${'major'}  | ${-1}  | ${'1.2.0'} | ${'n-1 major with only current major available'}
+        ${'2.1.0'}   | ${['2.1.0', '2.1.1', '2.1.2']}                                              | ${'minor'}  | ${-1}  | ${'2.1.0'} | ${'n-1 minor with only current minor available'}
+        ${'1.0.0'}   | ${['1.0.0', '2.0.0']}                                                       | ${'major'}  | ${-2}  | ${'1.0.0'} | ${'n-2 major with insufficient versions available'}
+        ${'1.0.0'}   | ${['1.0.0', '1.0.1', '1.1.0', '1.1.1', '2.0.0', '2.0.1', '2.1.0', '2.1.1']} | ${'major'}  | ${-1}  | ${'1.1.1'} | ${'n-1 major: latest 1.x.x when current is 1.0.0'}
+        ${'1.1.0'}   | ${['1.0.0', '1.0.1', '1.1.0', '1.1.1', '2.0.0', '2.0.1', '2.1.0', '2.1.1']} | ${'minor'}  | ${-1}  | ${'1.0.1'} | ${'n-1 minor: latest 1.0.x when current is 1.1.0'}
+        ${'1.0.0'}   | ${['1.0.0', '1.0.1-beta.1', '1.0.1', '1.1.0', '2.0.0']}                     | ${'minor'}  | ${-1}  | ${'1.0.1'} | ${'n-1 minor ignoring pre-release versions'}
+        ${'1.0.0'}   | ${['1.0.0', '1.0.1', '1.1.0-alpha.1', '1.1.0', '2.0.0']}                    | ${'minor'}  | ${-1}  | ${'1.0.1'} | ${'n-1 minor with pre-release in target version'}
+        ${'1.0.0'}   | ${['1.0.0']}                                                                | ${'major'}  | ${-1}  | ${'1.0.0'} | ${'n-1 major with only current version available'}
+        ${'1.0.0'}   | ${['1.0.0', '1.0.1', '1.0.2', '1.1.0', '1.1.1', '1.1.2', '2.0.0', '2.0.1']} | ${'major'}  | ${-1}  | ${'1.1.2'} | ${'n-1 major: complex scenario with multiple patches'}
+      `(
+        'should handle $description',
+        async ({
+          currentValue,
+          availableVersions,
+          offsetLevel,
+          offset,
+          expected,
+          description,
+        }) => {
+          const mockVersions: ReleaseResult = {
+            releases: availableVersions.map((version: string) => ({
+              version,
+              releaseTimestamp: asTimestamp('2023-01-01T00:00:00.000Z')!,
+            })),
+            sourceUrl: '',
+            homepage: '',
+            registryUrl: '',
+          };
+
+          vi.spyOn(registry, 'getPkgReleases').mockResolvedValue(mockVersions);
+
+          const config = {
+            versioning: 'semver',
+            constraints: {
+              offsetLevel,
+              offset,
+            },
+          };
+
+          const result = await getNewValue({
+            currentValue,
+            rangeStrategy: 'replace',
+            currentVersion: currentValue,
+            config,
+          });
+
+          expect(result).toBe(expected);
+        },
+      );
+    });
+
+    describe('semver-level n-1 versioning edge cases', () => {
+      it.each`
+        scenario                                  | currentValue | availableVersions               | offsetLevel | offset       | expected    | shouldThrow
+        ${'Zero offset (should use latest)'}      | ${'1.0.0'}   | ${['1.0.0', '2.0.0', '3.0.0']}  | ${'major'}  | ${0}         | ${'3.0.0'}  | ${false}
+        ${'offsetLevel without offset'}           | ${'1.0.0'}   | ${['1.0.0', '2.0.0']}           | ${'major'}  | ${undefined} | ${'2.0.0'}  | ${false}
+        ${'Empty versions array'}                 | ${'1.0.0'}   | ${[]}                           | ${'major'}  | ${-1}        | ${'1.0.0'}  | ${false}
+        ${'Non-semver versions with offsetLevel'} | ${'latest'}  | ${['latest', 'stable', 'beta']} | ${'major'}  | ${-1}        | ${'latest'} | ${false}
+        ${'Positive offset with offsetLevel'}     | ${'1.0.0'}   | ${['1.0.0', '2.0.0']}           | ${'major'}  | ${1}         | ${'1.0.0'}  | ${false}
+      `(
+        'should handle $scenario',
+        async ({
+          currentValue,
+          availableVersions,
+          offsetLevel,
+          offset,
+          expected,
+          shouldThrow,
+        }) => {
+          const mockVersions: ReleaseResult = {
+            releases: availableVersions.map((version: string) => ({
+              version,
+              releaseTimestamp: asTimestamp('2023-01-01T00:00:00.000Z')!,
+            })),
+            sourceUrl: '',
+            homepage: '',
+            registryUrl: '',
+          };
+
+          vi.spyOn(registry, 'getPkgReleases').mockResolvedValue(mockVersions);
+
+          const config = {
+            versioning: 'semver',
+            constraints: {
+              offsetLevel,
+              offset,
+            },
+          };
+
+          if (shouldThrow) {
+            await expect(
+              getNewValue({
+                currentValue,
+                rangeStrategy: 'replace',
+                currentVersion: currentValue,
+                config,
+              }),
+            ).rejects.toThrow();
+          } else {
+            const result = await getNewValue({
+              currentValue,
+              rangeStrategy: 'replace',
+              currentVersion: currentValue,
+              config,
+            });
+            expect(result).toBe(expected);
+          }
+        },
+      );
+    });
   });
 });
