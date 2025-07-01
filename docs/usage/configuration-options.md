@@ -3453,6 +3453,47 @@ Tokens can be configured via `hostRules` using the `"merge-confidence"` `hostTyp
 }
 ```
 
+### offsetLevel
+
+Specifies the semantic version level (major, minor, or patch) to apply n-1 versioning offset to.
+
+When used together with the `offset` constraint, `offsetLevel` allows you to target specific semantic versioning levels rather than applying the offset globally to all versions.
+
+For example, to select the latest version from the previous minor version group within the same major version:
+
+```json
+{
+  "constraints": {
+    "offsetLevel": "minor",
+    "offset": -1
+  }
+}
+```
+
+Available values:
+
+- `"major"` - Groups versions by major version (e.g., 1.x.x, 2.x.x)
+- `"minor"` - Groups versions by major.minor version (e.g., 1.0.x, 1.1.x)
+- `"patch"` - Groups versions by major.minor.patch version (e.g., 1.0.0, 1.0.1)
+
+**Major level example:**
+
+- Available versions: `1.0.0`, `1.1.0`, `2.0.0`, `2.1.0`, `3.0.0`
+- `offsetLevel: "major", offset: -1` → selects `2.1.0` (latest from second-to-latest major)
+
+**Minor level example:**
+
+- Available versions: `2.1.0`, `2.1.1`, `2.2.0`, `2.2.1`, `2.3.0`
+- Current version: `2.1.0`
+- `offsetLevel: "minor", offset: -1` → selects `2.2.1` (latest from previous minor within same major)
+
+**Patch level example:**
+
+- Available versions: `2.2.1`, `2.2.2`, `2.2.3`, `2.2.4`, `2.2.5`
+- `offsetLevel: "patch", offset: -1` → selects `2.2.4` (previous patch version)
+
+This feature is useful when you want to maintain compatibility by staying one version behind at specific semantic levels rather than always using the absolute latest version.
+
 ### overrideDatasource
 
 If a particular `datasource`/`packageName` combination has a lookup problem, you may be able to fix it by _changing_ `datasource` and potentially also `packageName`.
