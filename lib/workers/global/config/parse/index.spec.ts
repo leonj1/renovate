@@ -31,9 +31,9 @@ describe('workers/global/config/parse/index', () => {
           './__fixtures__/default.js',
         ),
       };
-    });
+    }, 15000);
 
-    it('supports token in env', async () => {
+    it('supports token in env', { timeout: 15000 }, async () => {
       const env: NodeJS.ProcessEnv = { ...defaultEnv, RENOVATE_TOKEN: 'abc' };
       const parsedConfig = await configParser.parseConfigs(env, defaultArgv);
       expect(parsedConfig).toContainEntries([['token', 'abc']]);

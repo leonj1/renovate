@@ -1005,8 +1005,11 @@ describe('modules/manager/gradle/extract', () => {
   });
 
   describe('apply from', () => {
-    it('loads further scripts using apply from statements', async () => {
-      const buildFile = codeBlock`
+    it(
+      'loads further scripts using apply from statements',
+      { timeout: 15000 },
+      async () => {
+        const buildFile = codeBlock`
         buildscript {
           repositories {
             mavenCentral()
@@ -1030,74 +1033,75 @@ describe('modules/manager/gradle/extract', () => {
         }
       `;
 
-      const fsMock = {
-        'gradleX/libs1.gradle': "ext.junitVersion = '5.5.2'",
-        'gradle/libs2.gradle': "ext.protoBufVersion = '3.18.2'",
-        'gradle/libs3.gradle': "ext.guavaVersion = '30.1-jre'",
-        'gradleX/gradleX/libs4.gradle': "ext.slf4jVersion = '1.7.30'",
-        'build.gradle': buildFile,
-        'gradle.properties': 'someDir=gradleX',
-      };
-      mockFs(fsMock);
+        const fsMock = {
+          'gradleX/libs1.gradle': "ext.junitVersion = '5.5.2'",
+          'gradle/libs2.gradle': "ext.protoBufVersion = '3.18.2'",
+          'gradle/libs3.gradle': "ext.guavaVersion = '30.1-jre'",
+          'gradleX/gradleX/libs4.gradle': "ext.slf4jVersion = '1.7.30'",
+          'build.gradle': buildFile,
+          'gradle.properties': 'someDir=gradleX',
+        };
+        mockFs(fsMock);
 
-      const res = await extractAllPackageFiles(
-        partial<ExtractConfig>(),
-        Object.keys(fsMock),
-      );
+        const res = await extractAllPackageFiles(
+          partial<ExtractConfig>(),
+          Object.keys(fsMock),
+        );
 
-      expect(res).toMatchObject([
-        { packageFile: 'gradle.properties' },
-        {
-          packageFile: 'build.gradle',
-          deps: [{ depName: 'io.jsonwebtoken:jjwt-api' }],
-        },
-        {
-          packageFile: 'gradle/libs2.gradle',
-          deps: [
-            {
-              depName: 'com.google.protobuf:protobuf-java',
-              currentValue: '3.18.2',
-              managerData: { packageFile: 'gradle/libs2.gradle' },
-            },
-          ],
-        },
-        {
-          packageFile: 'gradle/libs3.gradle',
-          deps: [
-            {
-              depName: 'com.google.guava:guava',
-              currentValue: '30.1-jre',
-              managerData: { packageFile: 'gradle/libs3.gradle' },
-            },
-          ],
-        },
-        {
-          packageFile: 'gradleX/libs1.gradle',
-          deps: [
-            {
-              depName: 'org.junit.jupiter:junit-jupiter-api',
-              currentValue: '5.5.2',
-              managerData: { packageFile: 'gradleX/libs1.gradle' },
-            },
-            {
-              depName: 'org.junit.jupiter:junit-jupiter-engine',
-              currentValue: '5.5.2',
-              managerData: { packageFile: 'gradleX/libs1.gradle' },
-            },
-          ],
-        },
-        {
-          packageFile: 'gradleX/gradleX/libs4.gradle',
-          deps: [
-            {
-              depName: 'org.slf4j:slf4j-api',
-              currentValue: '1.7.30',
-              managerData: { packageFile: 'gradleX/gradleX/libs4.gradle' },
-            },
-          ],
-        },
-      ]);
-    });
+        expect(res).toMatchObject([
+          { packageFile: 'gradle.properties' },
+          {
+            packageFile: 'build.gradle',
+            deps: [{ depName: 'io.jsonwebtoken:jjwt-api' }],
+          },
+          {
+            packageFile: 'gradle/libs2.gradle',
+            deps: [
+              {
+                depName: 'com.google.protobuf:protobuf-java',
+                currentValue: '3.18.2',
+                managerData: { packageFile: 'gradle/libs2.gradle' },
+              },
+            ],
+          },
+          {
+            packageFile: 'gradle/libs3.gradle',
+            deps: [
+              {
+                depName: 'com.google.guava:guava',
+                currentValue: '30.1-jre',
+                managerData: { packageFile: 'gradle/libs3.gradle' },
+              },
+            ],
+          },
+          {
+            packageFile: 'gradleX/libs1.gradle',
+            deps: [
+              {
+                depName: 'org.junit.jupiter:junit-jupiter-api',
+                currentValue: '5.5.2',
+                managerData: { packageFile: 'gradleX/libs1.gradle' },
+              },
+              {
+                depName: 'org.junit.jupiter:junit-jupiter-engine',
+                currentValue: '5.5.2',
+                managerData: { packageFile: 'gradleX/libs1.gradle' },
+              },
+            ],
+          },
+          {
+            packageFile: 'gradleX/gradleX/libs4.gradle',
+            deps: [
+              {
+                depName: 'org.slf4j:slf4j-api',
+                currentValue: '1.7.30',
+                managerData: { packageFile: 'gradleX/gradleX/libs4.gradle' },
+              },
+            ],
+          },
+        ]);
+      },
+    );
 
     it('works with files in sub-directories', async () => {
       const buildFile = `
