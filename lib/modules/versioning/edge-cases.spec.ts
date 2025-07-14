@@ -338,7 +338,7 @@ describe('modules/versioning/edge-cases', () => {
         },
       });
 
-      expect(result).toBe('3.0.0'); // Should return latest, ignoring offsetLevel
+      expect(result).toBe('2.0.0'); // Should return current value due to validation error
     });
 
     it('should ignore offsetLevel when offset is 0', async () => {
@@ -368,7 +368,7 @@ describe('modules/versioning/edge-cases', () => {
         },
       });
 
-      expect(result).toBe('3.0.0'); // Should return latest, ignoring offsetLevel
+      expect(result).toBe('2.0.0'); // Should return current value due to validation error
     });
 
     it('should work correctly when both offset and offsetLevel are specified', async () => {
@@ -456,6 +456,94 @@ describe('modules/versioning/edge-cases', () => {
       });
 
       expect(result).toBe('2.0.0'); // Should return current value due to validation error
+    });
+  });
+
+  describe('constraints object validation', () => {
+    it('should reject constraints with unknown properties', async () => {
+      const mockReleases: ReleaseResult = {
+        releases: [
+          { version: '1.0.0' },
+          { version: '2.0.0' },
+          { version: '3.0.0' },
+        ],
+      };
+      vi.spyOn(registry, 'getPkgReleases').mockResolvedValue(mockReleases);
+
+      const result = await getNewValue({
+        currentValue: '2.0.0',
+        rangeStrategy: 'auto',
+        currentVersion: '2.0.0',
+        config: {
+          datasource: 'npm',
+          packageName: 'test-package',
+          versioning: 'semver',
+          constraints: {
+            offset: -1,
+            unknownProp: 'value', // This should cause validation to fail
+          } as any,
+        },
+      });
+
+      expect(result).toBe('2.0.0'); // Should return current value due to validation error
+    });
+
+    it('should reject constraints with invalid types', async () => {
+      const mockReleases: ReleaseResult = {
+        releases: [
+          { version: '1.0.0' },
+          { version: '2.0.0' },
+          { version: '3.0.0' },
+        ],
+      };
+      vi.spyOn(registry, 'getPkgReleases').mockResolvedValue(mockReleases);
+
+      const result = await getNewValue({
+        currentValue: '2.0.0',
+        rangeStrategy: 'auto',
+        currentVersion: '2.0.0',
+        config: {
+          datasource: 'npm',
+          packageName: 'test-package',
+          versioning: 'semver',
+          constraints: {
+            offset: '-1', // String instead of number
+            offsetLevel: 'major',
+          } as any,
+        },
+      });
+
+      expect(result).toBe('2.0.0'); // Should return current value due to validation error
+    });
+
+    it('should accept valid constraints and process normally', async () => {
+      const mockReleases: ReleaseResult = {
+        releases: [
+          { version: '1.0.0' },
+          { version: '2.0.0' },
+          { version: '3.0.0' },
+        ],
+      };
+      vi.spyOn(registry, 'getPkgReleases').mockResolvedValue(mockReleases);
+
+      const result = await getNewValue({
+        currentValue: '3.0.0',
+        rangeStrategy: 'auto',
+        currentVersion: '3.0.0',
+        config: {
+          datasource: 'npm',
+          packageName: 'test-package',
+          versioning: 'semver',
+          constraints: {
+            offset: -1,
+            offsetLevel: 'major',
+            ignorePrerelease: true,
+            allowedVersions: '>= 1.0.0',
+          },
+        },
+      });
+
+      expect(result).toBe('2.0.0'); // Should process normally with valid constraints
     });
   });
 

@@ -11,6 +11,7 @@ import {
 } from '../../types/errors/n-minus-one-errors';
 import versionings from './api';
 import { Versioning } from './schema';
+import { validateConstraints } from './constraints-schema';
 import * as semverCoerced from './semver-coerced';
 import type { VersioningApi, VersioningApiConstructor } from './types';
 
@@ -186,6 +187,22 @@ export async function getNewValue({
   config,
 }: GetNewValueConfig): Promise<string> {
   const versioning = get(config.versioning);
+
+  // Validate constraints object structure
+  if (config.constraints) {
+    const validation = validateConstraints(config.constraints);
+    if (!validation.success) {
+      logger.warn(
+        {
+          constraints: config.constraints,
+          errors: validation.error?.errors,
+          packageName: config.packageName,
+        },
+        'Invalid constraints object structure',
+      );
+      return currentValue;
+    }
+  }
 
   // Validate inputs
   if (

@@ -819,9 +819,21 @@ Additionally, constraints can be used to implement N-1 versioning, allowing you 
 
 The `constraints` object supports the following properties for N-1 versioning:
 
-- `offset`: A negative integer specifying how many versions behind the latest to target
-- `offsetLevel`: The semantic version level to apply the offset to (`"major"`, `"minor"`, or `"patch"`)
-- `ignorePrerelease`: Whether to ignore pre-release versions (defaults to `true`)
+#### Constraints Object Structure
+
+| Property           | Type      | Description                                    | Required | Valid Values                    |
+| ------------------ | --------- | ---------------------------------------------- | -------- | ------------------------------- |
+| `allowedVersions`  | `string`  | Version range pattern (existing functionality) | No       | Any valid version range         |
+| `offset`           | `number`  | How many versions behind the latest to target  | No       | `0` or negative integer         |
+| `offsetLevel`      | `string`  | Semantic version level for offset application  | No       | `"major"`, `"minor"`, `"patch"` |
+| `ignorePrerelease` | `boolean` | Whether to ignore pre-release versions         | No       | `true` (default), `false`       |
+
+**Important Notes:**
+
+- The constraints object structure is strictly validated
+- Unknown properties will cause the constraint to be rejected
+- If validation fails, Renovate will fall back to the current version
+- `offsetLevel` requires a non-zero `offset` value to function
 
 #### offset
 
@@ -961,6 +973,36 @@ Controls whether pre-release versions are considered when determining the target
   }
 }
 ```
+
+**4. Including unknown properties:**
+
+```json
+// ❌ Wrong - unknown property will cause validation failure
+{
+  "constraints": {
+    "offset": -1,
+    "customProperty": "value"
+  }
+}
+
+// ✅ Correct - only use documented properties
+{
+  "constraints": {
+    "offset": -1,
+    "offsetLevel": "major",
+    "ignorePrerelease": true
+  }
+}
+```
+
+#### Validation Behavior
+
+When constraints validation fails:
+
+1. A warning is logged with details about the validation error
+2. The current package version is retained (no update occurs)
+3. Processing continues with other packages
+4. The validation ensures type safety and prevents configuration errors
 
 If you need to _override_ constraints that Renovate detects from the repository, wrap it in the `force` object like so:
 
