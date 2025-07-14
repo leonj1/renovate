@@ -814,6 +814,231 @@ For now this datasource constraint feature only supports `python`, other compati
 }
 ```
 
+Additionally, constraints can be used to implement N-1 versioning, allowing you to stay one or more versions behind the latest release. This is useful for conservative update strategies where you want to avoid immediately adopting the newest versions.
+
+**N-1 Versioning with Constraints**
+
+The `constraints` object supports the following properties for N-1 versioning:
+
+**Constraints Object Structure**
+
+| Property           | Type      | Description                                    | Required | Valid Values                    |
+| ------------------ | --------- | ---------------------------------------------- | -------- | ------------------------------- |
+| `allowedVersions`  | `string`  | Version range pattern (existing functionality) | No       | Any valid version range         |
+| `offset`           | `number`  | How many versions behind the latest to target  | No       | `0` or negative integer         |
+| `offsetLevel`      | `string`  | Semantic version level for offset application  | No       | `"major"`, `"minor"`, `"patch"` |
+| `ignorePrerelease` | `boolean` | Whether to ignore pre-release versions         | No       | `true` (default), `false`       |
+
+**Important Notes:**
+
+- The constraints object structure is strictly validated
+- Unknown properties will cause the constraint to be rejected
+- If validation fails, Renovate will fall back to the current version
+- `offsetLevel` requires a non-zero `offset` value to function
+
+### ignorePrerelease
+
+Controls whether pre-release versions are considered when applying N-1 versioning. When set to `true` (default), pre-release versions are ignored and only stable versions are counted.
+
+### offset
+
+The `offset` constraint allows you to specify a version relative to the latest available version. It must be a negative integer or zero:
+
+- `0`: Use the latest version (default behavior)
+- `-1`: Use the version immediately before the latest (N-1)
+- `-2`: Use two versions before the latest (N-2)
+- etc.
+
+Example for staying one version behind:
+
+```json
+{
+  "constraints": {
+    "offset": -1
+  }
+}
+```
+
+### offsetLevel
+
+When combined with `offset`, the `offsetLevel` constraint allows you to apply the offset at a specific semantic version level rather than globally across all versions.
+
+**Important:** `offsetLevel` requires `offset` to be specified and non-zero. If `offset` is not specified or is set to 0, `offsetLevel` will be ignored.
+
+Available values:
+
+- `"major"` - Groups versions by major version (e.g., 1.x.x, 2.x.x)
+- `"minor"` - Groups versions by major.minor version (e.g., 1.0.x, 1.1.x)
+- `"patch"` - Groups versions by major.minor.patch version (e.g., 1.0.0, 1.0.1)
+
+Example for using the latest version from the previous minor release:
+
+```json
+{
+  "constraints": {
+    "offset": -1,
+    "offsetLevel": "minor"
+  }
+}
+```
+
+**Examples:**
+
+1. **Major level** - Stay on the previous major version:
+
+   - Available versions: `1.0.0`, `1.1.0`, `2.0.0`, `2.1.0`, `3.0.0`
+   - `offsetLevel: "major", offset: -1` → selects `2.1.0` (latest from second-to-latest major)
+
+2. **Minor level** - Use previous minor within same major:
+
+   - Available versions: `2.1.0`, `2.1.1`, `2.2.0`, `2.2.1`, `2.3.0`
+   - Current version: `2.1.0`
+   - `offsetLevel: "minor", offset: -1` → selects `2.2.1` (latest from previous minor within same major)
+
+3. **Patch level** - Use previous patch version:
+   - Available versions: `2.2.1`, `2.2.2`, `2.2.3`, `2.2.4`, `2.2.5`
+   - `offsetLevel: "patch", offset: -1` → selects `2.2.4` (previous patch version)
+
+**Edge Cases:**
+
+- If the offset exceeds available versions, the current version is retained
+- When `offsetLevel` is `minor` or `patch`, only versions within the same parent level are considered
+- Pre-release versions are ignored by default unless `ignorePrerelease` is set to `false`
+- If `offsetLevel` is specified without `offset`, it will be ignored and the latest version will be used
+- If `offset` is set to 0, `offsetLevel` will be ignored regardless of its value
+
+#### Common Mistakes and Troubleshooting
+
+**1. Using `offsetLevel` without `offset`:**
+
+```jsonc
+// ❌ Wrong - offsetLevel will be ignored
+{
+  "constraints": {
+    "offsetLevel": "major"
+  }
+}
+
+// ✅ Correct - both offset and offsetLevel specified
+{
+  "constraints": {
+    "offset": -1,
+    "offsetLevel": "major"
+  }
+}
+```
+
+**2. Using `offset: 0` with `offsetLevel`:**
+
+```jsonc
+// ❌ Wrong - offsetLevel will be ignored when offset is 0
+{
+  "constraints": {
+    "offset": 0,
+    "offsetLevel": "minor"
+  }
+}
+
+// ✅ Correct - use a non-zero offset
+{
+  "constraints": {
+    "offset": -1,
+    "offsetLevel": "minor"
+  }
+}
+```
+
+**3. Using positive offset values:**
+
+```jsonc
+// ❌ Wrong - offset must be negative or zero
+{
+  "constraints": {
+    "offset": 1
+  }
+}
+
+// ✅ Correct - use negative offset
+{
+  "constraints": {
+    "offset": -1
+  }
+}
+```
+
+**4. Including unknown properties:**
+
+```jsonc
+// ❌ Wrong - unknown property will cause validation failure
+{
+  "constraints": {
+    "offset": -1,
+    "customProperty": "value"
+  }
+}
+
+// ✅ Correct - only use documented properties
+{
+  "constraints": {
+    "offset": -1,
+    "offsetLevel": "major",
+    "ignorePrerelease": true
+  }
+}
+```
+
+#### Validation Behavior
+
+When constraints validation fails:
+
+1. A warning is logged with details about the validation error
+2. The current package version is retained (no update occurs)
+3. Processing continues with other packages
+4. The validation ensures type safety and prevents configuration errors
+
+#### Configuration Schema Validation
+
+Renovate performs schema validation on N-1 versioning configuration to ensure correctness:
+
+**At Configuration Time:**
+
+- When Renovate loads your configuration file (e.g., `renovate.json`)
+- Validates that constraints in packageRules follow the correct schema
+- Reports configuration errors if validation fails
+- Prevents invalid configurations from being used
+
+**Validation Errors:**
+Configuration validation errors will appear in Renovate logs with specific messages:
+
+- `Offset must be 0 or a negative integer` - when using positive offset values
+- `offsetLevel requires a non-zero offset value` - when using offsetLevel without offset
+- `Unrecognized key` - when including unknown properties in constraints
+- `Expected number` - when offset is not a number
+- `Invalid enum value` - when offsetLevel is not 'major', 'minor', or 'patch'
+
+**Example Configuration Validation:**
+
+```json
+{
+  "packageRules": [
+    {
+      "matchPackageNames": ["react"],
+      "constraints": {
+        "offset": -1,
+        "offsetLevel": "major"
+      }
+    }
+  ]
+}
+```
+
+This configuration will be validated to ensure:
+
+- `offset` is a negative integer or zero
+- `offsetLevel` is only used with non-zero offset
+- No unknown properties are included
+- All types are correct (offset is number, offsetLevel is string, etc.)
+
 If you need to _override_ constraints that Renovate detects from the repository, wrap it in the `force` object like so:
 
 ```json

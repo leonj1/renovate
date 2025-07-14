@@ -2,7 +2,9 @@ import is from '@sindresorhus/is';
 import { logger } from '../../logger';
 import { filterMap } from '../../util/filter-map';
 import { regEx } from '../../util/regex';
+
 import { defaultVersioning } from '../versioning';
+
 import * as allVersioning from '../versioning';
 import datasources from './api';
 import { CustomDatasource } from './custom';

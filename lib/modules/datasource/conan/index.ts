@@ -4,6 +4,7 @@ import { cache } from '../../../util/cache/package/decorator';
 import { GithubHttp } from '../../../util/http/github';
 import { regEx } from '../../../util/regex';
 import { ensureTrailingSlash, joinUrlParts } from '../../../util/url';
+
 import * as allVersioning from '../../versioning';
 import { Datasource } from '../datasource';
 import type {

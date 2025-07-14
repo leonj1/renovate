@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { getOptions } from '../../config/options';
 import { loadModules } from '../../util/modules';
 import { isVersioningApiConstructor } from './common';

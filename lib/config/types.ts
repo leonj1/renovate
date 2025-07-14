@@ -430,6 +430,7 @@ export interface ValidationMessage {
 export type AllowedParents =
   | '.'
   | 'bumpVersions'
+  | 'constraints'
   | 'customDatasources'
   | 'customManagers'
   | 'hostRules'

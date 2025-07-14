@@ -14,6 +14,7 @@ import { filterMap } from '../../util/filter-map';
 import { AsyncResult, Result } from '../../util/result';
 import { DatasourceCacheStats } from '../../util/stats';
 import { trimTrailingSlash } from '../../util/url';
+
 import * as versioning from '../versioning';
 import datasources from './api';
 import {

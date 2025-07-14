@@ -11,6 +11,7 @@ import { BitriseDatasource } from './bitrise';
 import { BuildpacksRegistryDatasource } from './buildpacks-registry';
 import { CdnjsDatasource } from './cdnjs';
 import { ClojureDatasource } from './clojure';
+
 import { ConanDatasource } from './conan';
 import { CondaDatasource } from './conda';
 import { CpanDatasource } from './cpan';
