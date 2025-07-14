@@ -813,6 +813,155 @@ For now this datasource constraint feature only supports `python`, other compati
 }
 ```
 
+Additionally, constraints can be used to implement N-1 versioning, allowing you to stay one or more versions behind the latest release. This is useful for conservative update strategies where you want to avoid immediately adopting the newest versions.
+
+### N-1 Versioning with Constraints
+
+The `constraints` object supports the following properties for N-1 versioning:
+
+- `offset`: A negative integer specifying how many versions behind the latest to target
+- `offsetLevel`: The semantic version level to apply the offset to (`"major"`, `"minor"`, or `"patch"`)
+- `ignorePrerelease`: Whether to ignore pre-release versions (defaults to `true`)
+
+#### offset
+
+The `offset` constraint allows you to specify a version relative to the latest available version. It must be a negative integer or zero:
+
+- `0`: Use the latest version (default behavior)
+- `-1`: Use the version immediately before the latest (N-1)
+- `-2`: Use two versions before the latest (N-2)
+- etc.
+
+Example for staying one version behind:
+
+```json
+{
+  "constraints": {
+    "offset": -1
+  }
+}
+```
+
+#### offsetLevel
+
+When combined with `offset`, the `offsetLevel` constraint allows you to apply the offset at a specific semantic version level rather than globally across all versions.
+
+**Important:** `offsetLevel` requires `offset` to be specified and non-zero. If `offset` is not specified or is set to 0, `offsetLevel` will be ignored.
+
+Available values:
+
+- `"major"` - Groups versions by major version (e.g., 1.x.x, 2.x.x)
+- `"minor"` - Groups versions by major.minor version (e.g., 1.0.x, 1.1.x)
+- `"patch"` - Groups versions by major.minor.patch version (e.g., 1.0.0, 1.0.1)
+
+Example for using the latest version from the previous minor release:
+
+```json
+{
+  "constraints": {
+    "offset": -1,
+    "offsetLevel": "minor"
+  }
+}
+```
+
+**Examples:**
+
+1. **Major level** - Stay on the previous major version:
+
+   - Available versions: `1.0.0`, `1.1.0`, `2.0.0`, `2.1.0`, `3.0.0`
+   - `offsetLevel: "major", offset: -1` → selects `2.1.0` (latest from second-to-latest major)
+
+2. **Minor level** - Use previous minor within same major:
+
+   - Available versions: `2.1.0`, `2.1.1`, `2.2.0`, `2.2.1`, `2.3.0`
+   - Current version: `2.1.0`
+   - `offsetLevel: "minor", offset: -1` → selects `2.2.1` (latest from previous minor within same major)
+
+3. **Patch level** - Use previous patch version:
+   - Available versions: `2.2.1`, `2.2.2`, `2.2.3`, `2.2.4`, `2.2.5`
+   - `offsetLevel: "patch", offset: -1` → selects `2.2.4` (previous patch version)
+
+**Edge Cases:**
+
+- If the offset exceeds available versions, the current version is retained
+- When `offsetLevel` is `minor` or `patch`, only versions within the same parent level are considered
+- Pre-release versions are ignored by default unless `ignorePrerelease` is set to `false`
+- If `offsetLevel` is specified without `offset`, it will be ignored and the latest version will be used
+- If `offset` is set to 0, `offsetLevel` will be ignored regardless of its value
+
+#### ignorePrerelease
+
+Controls whether pre-release versions are considered when determining the target version. Defaults to `true`.
+
+```json
+{
+  "constraints": {
+    "offset": -1,
+    "ignorePrerelease": false
+  }
+}
+```
+
+#### Common Mistakes and Troubleshooting
+
+**1. Using `offsetLevel` without `offset`:**
+
+```json
+// ❌ Wrong - offsetLevel will be ignored
+{
+  "constraints": {
+    "offsetLevel": "major"
+  }
+}
+
+// ✅ Correct - both offset and offsetLevel specified
+{
+  "constraints": {
+    "offset": -1,
+    "offsetLevel": "major"
+  }
+}
+```
+
+**2. Using `offset: 0` with `offsetLevel`:**
+
+```json
+// ❌ Wrong - offsetLevel will be ignored when offset is 0
+{
+  "constraints": {
+    "offset": 0,
+    "offsetLevel": "minor"
+  }
+}
+
+// ✅ Correct - use a non-zero offset
+{
+  "constraints": {
+    "offset": -1,
+    "offsetLevel": "minor"
+  }
+}
+```
+
+**3. Using positive offset values:**
+
+```json
+// ❌ Wrong - offset must be negative or zero
+{
+  "constraints": {
+    "offset": 1
+  }
+}
+
+// ✅ Correct - use negative offset
+{
+  "constraints": {
+    "offset": -1
+  }
+}
+```
+
 If you need to _override_ constraints that Renovate detects from the repository, wrap it in the `force` object like so:
 
 ```json
@@ -3452,47 +3601,6 @@ Tokens can be configured via `hostRules` using the `"merge-confidence"` `hostTyp
   ]
 }
 ```
-
-### offsetLevel
-
-Specifies the semantic version level (major, minor, or patch) to apply n-1 versioning offset to.
-
-When used together with the `offset` constraint, `offsetLevel` allows you to target specific semantic versioning levels rather than applying the offset globally to all versions.
-
-For example, to select the latest version from the previous minor version group within the same major version:
-
-```json
-{
-  "constraints": {
-    "offsetLevel": "minor",
-    "offset": -1
-  }
-}
-```
-
-Available values:
-
-- `"major"` - Groups versions by major version (e.g., 1.x.x, 2.x.x)
-- `"minor"` - Groups versions by major.minor version (e.g., 1.0.x, 1.1.x)
-- `"patch"` - Groups versions by major.minor.patch version (e.g., 1.0.0, 1.0.1)
-
-**Major level example:**
-
-- Available versions: `1.0.0`, `1.1.0`, `2.0.0`, `2.1.0`, `3.0.0`
-- `offsetLevel: "major", offset: -1` → selects `2.1.0` (latest from second-to-latest major)
-
-**Minor level example:**
-
-- Available versions: `2.1.0`, `2.1.1`, `2.2.0`, `2.2.1`, `2.3.0`
-- Current version: `2.1.0`
-- `offsetLevel: "minor", offset: -1` → selects `2.2.1` (latest from previous minor within same major)
-
-**Patch level example:**
-
-- Available versions: `2.2.1`, `2.2.2`, `2.2.3`, `2.2.4`, `2.2.5`
-- `offsetLevel: "patch", offset: -1` → selects `2.2.4` (previous patch version)
-
-This feature is useful when you want to maintain compatibility by staying one version behind at specific semantic levels rather than always using the absolute latest version.
 
 ### overrideDatasource
 

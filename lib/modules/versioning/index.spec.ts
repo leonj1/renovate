@@ -213,8 +213,13 @@ describe('modules/versioning/index', () => {
 
       expect(result).toBe('1.0.0');
       expect(debugSpy).toHaveBeenCalledWith(
-        { error, currentValue: '1.0.0', versioning: 'semver' },
-        'Failed to fetch package releases, returning currentValue',
+        expect.objectContaining({
+          error: expect.stringContaining('Failed to fetch registry data'),
+          originalError: error,
+          currentValue: '1.0.0',
+          versioning: 'semver',
+        }),
+        'Failed to fetch package releases',
       );
     });
 
