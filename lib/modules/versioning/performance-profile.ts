@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Performance profiling script for N-1 versioning feature
  *
@@ -6,15 +7,10 @@
  */
 
 import { performance } from 'perf_hooks';
-import { get } from './index';
 import type { VersioningApi } from './types';
+import { get } from './index';
 
-interface PerformanceResult {
-  operation: string;
-  versionCount: number;
-  duration: number;
-  throughput: number; // operations per second
-}
+// Interface for individual performance results (kept for potential future use)
 
 interface ProfileResults {
   testSet: number;
@@ -74,24 +70,21 @@ function getMemoryUsage(): number {
 }
 
 // Profile sorting performance
-async function profileSorting(
-  versions: string[],
-  versioning: VersioningApi,
-): Promise<number> {
+function profileSorting(versions: string[], versioning: VersioningApi): number {
   const start = performance.now();
 
-  const sorted = [...versions].sort((a, b) => versioning.sortVersions(a, b));
+  [...versions].sort((a, b) => versioning.sortVersions(a, b));
 
   const end = performance.now();
   return end - start;
 }
 
 // Profile grouping performance
-async function profileGrouping(
+function profileGrouping(
   versions: string[],
   versioning: VersioningApi,
   level: 'major' | 'minor' | 'patch',
-): Promise<number> {
+): number {
   const start = performance.now();
 
   const groups: Record<string, string[]> = {};
@@ -135,18 +128,18 @@ async function profileGrouping(
 }
 
 // Profile offset calculation
-async function profileOffsetCalculation(
+function profileOffsetCalculation(
   sortedVersions: string[],
   versioning: VersioningApi,
   offset: number,
-): Promise<number> {
+): number {
   const start = performance.now();
 
   // Simulate offset calculation
   const targetIndex = sortedVersions.length - 1 + offset;
 
   if (targetIndex >= 0 && targetIndex < sortedVersions.length) {
-    const targetVersion = sortedVersions[targetIndex];
+    // Target version would be at sortedVersions[targetIndex]
   }
 
   const end = performance.now();
@@ -154,7 +147,7 @@ async function profileOffsetCalculation(
 }
 
 // Main profiling function
-export async function profileNMinusOnePerformance(): Promise<void> {
+export function profileNMinusOnePerformance(): void {
   console.log('N-1 Versioning Performance Profile\n');
   console.log('=====================================\n');
 
@@ -175,7 +168,7 @@ export async function profileNMinusOnePerformance(): Promise<void> {
     );
 
     // Profile sorting
-    const sortingTime = await profileSorting(versions, versioning);
+    const sortingTime = profileSorting(versions, versioning);
     console.log(
       `Sorting: ${sortingTime.toFixed(2)} ms (${((size / sortingTime) * 1000).toFixed(0)} versions/sec)`,
     );
@@ -183,7 +176,7 @@ export async function profileNMinusOnePerformance(): Promise<void> {
     // Profile grouping for different levels
     const groupingTimes: Record<string, number> = {};
     for (const level of ['major', 'minor', 'patch'] as const) {
-      const time = await profileGrouping(versions, versioning, level);
+      const time = profileGrouping(versions, versioning, level);
       groupingTimes[level] = time;
       console.log(
         `Grouping by ${level}: ${time.toFixed(2)} ms (${((size / time) * 1000).toFixed(0)} versions/sec)`,
@@ -198,11 +191,7 @@ export async function profileNMinusOnePerformance(): Promise<void> {
     let totalOffsetTime = 0;
 
     for (const offset of offsets) {
-      const time = await profileOffsetCalculation(
-        sortedVersions,
-        versioning,
-        offset,
-      );
+      const time = profileOffsetCalculation(sortedVersions, versioning, offset);
       totalOffsetTime += time;
       console.log(`Offset calculation (${offset}): ${time.toFixed(2)} ms`);
     }
@@ -312,5 +301,9 @@ export async function profileNMinusOnePerformance(): Promise<void> {
 
 // Run if executed directly
 if (require.main === module) {
-  profileNMinusOnePerformance().catch(console.error);
+  try {
+    profileNMinusOnePerformance();
+  } catch (error) {
+    console.error(error);
+  }
 }

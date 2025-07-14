@@ -20,7 +20,7 @@ export class InvalidOffsetError extends NMinusOneError {
 
   constructor(offset: number, message?: string) {
     const errorMessage =
-      message ||
+      message ??
       `Invalid offset value: ${offset}. Offset must be 0 or a negative integer.`;
     super(errorMessage);
     Object.setPrototypeOf(this, InvalidOffsetError.prototype);
@@ -36,7 +36,7 @@ export class InvalidOffsetLevelError extends NMinusOneError {
 
   constructor(offsetLevel: string, message?: string) {
     const errorMessage =
-      message ||
+      message ??
       `Invalid offsetLevel value: "${offsetLevel}". Must be one of: major, minor, patch.`;
     super(errorMessage);
     Object.setPrototypeOf(this, InvalidOffsetLevelError.prototype);
@@ -53,7 +53,7 @@ export class VersionListEmptyError extends NMinusOneError {
 
   constructor(packageName?: string, datasource?: string, message?: string) {
     const errorMessage =
-      message ||
+      message ??
       `No versions available${packageName ? ` for package "${packageName}"` : ''}${datasource ? ` from datasource "${datasource}"` : ''}`;
     super(errorMessage);
     Object.setPrototypeOf(this, VersionListEmptyError.prototype);
@@ -77,7 +77,7 @@ export class OffsetOutOfBoundsError extends NMinusOneError {
     message?: string,
   ) {
     const errorMessage =
-      message ||
+      message ??
       `Offset ${offset} is out of bounds. Only ${availableVersions} versions available${offsetLevel ? ` at ${offsetLevel} level` : ''}.`;
     super(errorMessage);
     Object.setPrototypeOf(this, OffsetOutOfBoundsError.prototype);
@@ -102,7 +102,7 @@ export class RegistryFetchError extends NMinusOneError {
     message?: string,
   ) {
     const errorMessage =
-      message ||
+      message ??
       `Failed to fetch registry data${packageName ? ` for package "${packageName}"` : ''}${datasource ? ` from datasource "${datasource}"` : ''}: ${originalError.message}`;
     super(errorMessage);
     Object.setPrototypeOf(this, RegistryFetchError.prototype);

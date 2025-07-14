@@ -46,7 +46,10 @@ export default tseslint.config(
   {
     ...jsFiles,
 
-    extends: [importX.flatConfigs.recommended, importX.flatConfigs.typescript],
+    extends: /** @type {any} */ ([
+      importX.flatConfigs.recommended,
+      importX.flatConfigs.typescript,
+    ]),
 
     languageOptions: {
       globals: {

@@ -815,11 +815,11 @@ For now this datasource constraint feature only supports `python`, other compati
 
 Additionally, constraints can be used to implement N-1 versioning, allowing you to stay one or more versions behind the latest release. This is useful for conservative update strategies where you want to avoid immediately adopting the newest versions.
 
-### N-1 Versioning with Constraints
+**N-1 Versioning with Constraints**
 
 The `constraints` object supports the following properties for N-1 versioning:
 
-#### Constraints Object Structure
+**Constraints Object Structure**
 
 | Property           | Type      | Description                                    | Required | Valid Values                    |
 | ------------------ | --------- | ---------------------------------------------- | -------- | ------------------------------- |
@@ -835,7 +835,11 @@ The `constraints` object supports the following properties for N-1 versioning:
 - If validation fails, Renovate will fall back to the current version
 - `offsetLevel` requires a non-zero `offset` value to function
 
-#### offset
+### ignorePrerelease
+
+Controls whether pre-release versions are considered when applying N-1 versioning. When set to `true` (default), pre-release versions are ignored and only stable versions are counted.
+
+### offset
 
 The `offset` constraint allows you to specify a version relative to the latest available version. It must be a negative integer or zero:
 
@@ -854,7 +858,7 @@ Example for staying one version behind:
 }
 ```
 
-#### offsetLevel
+### offsetLevel
 
 When combined with `offset`, the `offsetLevel` constraint allows you to apply the offset at a specific semantic version level rather than globally across all versions.
 
@@ -902,24 +906,11 @@ Example for using the latest version from the previous minor release:
 - If `offsetLevel` is specified without `offset`, it will be ignored and the latest version will be used
 - If `offset` is set to 0, `offsetLevel` will be ignored regardless of its value
 
-#### ignorePrerelease
-
-Controls whether pre-release versions are considered when determining the target version. Defaults to `true`.
-
-```json
-{
-  "constraints": {
-    "offset": -1,
-    "ignorePrerelease": false
-  }
-}
-```
-
 #### Common Mistakes and Troubleshooting
 
 **1. Using `offsetLevel` without `offset`:**
 
-```json
+```jsonc
 // ❌ Wrong - offsetLevel will be ignored
 {
   "constraints": {
@@ -938,7 +929,7 @@ Controls whether pre-release versions are considered when determining the target
 
 **2. Using `offset: 0` with `offsetLevel`:**
 
-```json
+```jsonc
 // ❌ Wrong - offsetLevel will be ignored when offset is 0
 {
   "constraints": {
@@ -958,7 +949,7 @@ Controls whether pre-release versions are considered when determining the target
 
 **3. Using positive offset values:**
 
-```json
+```jsonc
 // ❌ Wrong - offset must be negative or zero
 {
   "constraints": {
@@ -976,7 +967,7 @@ Controls whether pre-release versions are considered when determining the target
 
 **4. Including unknown properties:**
 
-```json
+```jsonc
 // ❌ Wrong - unknown property will cause validation failure
 {
   "constraints": {
@@ -1003,6 +994,49 @@ When constraints validation fails:
 2. The current package version is retained (no update occurs)
 3. Processing continues with other packages
 4. The validation ensures type safety and prevents configuration errors
+
+#### Configuration Schema Validation
+
+Renovate performs schema validation on N-1 versioning configuration to ensure correctness:
+
+**At Configuration Time:**
+
+- When Renovate loads your configuration file (e.g., `renovate.json`)
+- Validates that constraints in packageRules follow the correct schema
+- Reports configuration errors if validation fails
+- Prevents invalid configurations from being used
+
+**Validation Errors:**
+Configuration validation errors will appear in Renovate logs with specific messages:
+
+- `Offset must be 0 or a negative integer` - when using positive offset values
+- `offsetLevel requires a non-zero offset value` - when using offsetLevel without offset
+- `Unrecognized key` - when including unknown properties in constraints
+- `Expected number` - when offset is not a number
+- `Invalid enum value` - when offsetLevel is not 'major', 'minor', or 'patch'
+
+**Example Configuration Validation:**
+
+```json
+{
+  "packageRules": [
+    {
+      "matchPackageNames": ["react"],
+      "constraints": {
+        "offset": -1,
+        "offsetLevel": "major"
+      }
+    }
+  ]
+}
+```
+
+This configuration will be validated to ensure:
+
+- `offset` is a negative integer or zero
+- `offsetLevel` is only used with non-zero offset
+- No unknown properties are included
+- All types are correct (offset is number, offsetLevel is string, etc.)
 
 If you need to _override_ constraints that Renovate detects from the repository, wrap it in the `force` object like so:
 

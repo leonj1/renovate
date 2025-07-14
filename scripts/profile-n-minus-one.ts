@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+/* eslint-disable no-console */
 /**
  * Script to run N-1 versioning performance profiling
  * Usage: npm run profile:n-minus-one
@@ -7,10 +8,10 @@
 
 import { profileNMinusOnePerformance } from '../lib/modules/versioning/performance-profile';
 
-async function main() {
+function main(): void {
   try {
     console.log('Starting N-1 Versioning Performance Profiling...\n');
-    await profileNMinusOnePerformance();
+    profileNMinusOnePerformance();
     console.log('\nProfiling completed successfully!');
     process.exit(0);
   } catch (error) {
@@ -19,4 +20,4 @@ async function main() {
   }
 }
 
-main();
+void main();

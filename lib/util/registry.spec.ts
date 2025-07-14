@@ -1,16 +1,16 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { logger } from '../logger';
 import { getPkgReleases } from '../modules/datasource';
 import type {
   GetPkgReleasesConfig,
   ReleaseResult,
 } from '../modules/datasource/types';
-import { logger } from '../logger';
 import { registry } from './registry';
 
 vi.mock('../modules/datasource');
 vi.mock('../logger');
 
-describe('util/registry', () => {
+describe.sequential('util/registry', () => {
   const mockConfig: GetPkgReleasesConfig = {
     datasource: 'npm',
     packageName: 'test-package',
@@ -27,6 +27,7 @@ describe('util/registry', () => {
   });
 
   afterEach(() => {
+    vi.clearAllTimers();
     vi.useRealTimers();
   });
 
@@ -120,15 +121,23 @@ describe('util/registry', () => {
 
       const promise = registry.getPkgReleases(mockConfig);
 
-      // Handle the promise rejection properly
-      const rejectionPromise = expect(promise).rejects.toThrow('Network error');
+      // Create a separate promise to handle timer advancement
+      const timerPromise = (async () => {
+        await vi.advanceTimersByTimeAsync(1000); // First retry
+        await vi.advanceTimersByTimeAsync(2000); // Second retry
+        await vi.advanceTimersByTimeAsync(4000); // Third attempt (no more retries)
+      })();
 
-      // Fast-forward through all retries
-      await vi.advanceTimersByTimeAsync(1000); // First retry
-      await vi.advanceTimersByTimeAsync(2000); // Second retry
-      await vi.advanceTimersByTimeAsync(4000); // Third attempt (no more retries)
-
-      await rejectionPromise;
+      try {
+        // Wait for both the main promise and timer advancement
+        await Promise.all([
+          expect(promise).rejects.toThrow('Network error'),
+          timerPromise,
+        ]);
+      } finally {
+        // Ensure timers are cleared even if test fails
+        vi.clearAllTimers();
+      }
 
       expect(getPkgReleases).toHaveBeenCalledTimes(3);
     });
@@ -185,21 +194,25 @@ describe('util/registry', () => {
 
       const promise = registry.getPkgReleases(mockConfig, customConfig);
 
-      // First retry: 1000ms
-      await vi.advanceTimersByTimeAsync(1000);
+      try {
+        // First retry: 1000ms
+        await vi.advanceTimersByTimeAsync(1000);
 
-      // Second retry: 4000ms
-      await vi.advanceTimersByTimeAsync(4000);
+        // Second retry: 4000ms
+        await vi.advanceTimersByTimeAsync(4000);
 
-      // Third retry: should be capped at maxDelay (5000ms) instead of 16000ms
-      await vi.advanceTimersByTimeAsync(5000);
+        // Third retry: should be capped at maxDelay (5000ms) instead of 16000ms
+        await vi.advanceTimersByTimeAsync(5000);
 
-      // Fourth retry: should still be capped at maxDelay (5000ms)
-      await vi.advanceTimersByTimeAsync(5000);
+        // Fourth retry: should still be capped at maxDelay (5000ms)
+        await vi.advanceTimersByTimeAsync(5000);
 
-      const result = await promise;
+        const result = await promise;
+        expect(result).toEqual(mockResult);
+      } finally {
+        vi.clearAllTimers();
+      }
 
-      expect(result).toEqual(mockResult);
       expect(getPkgReleases).toHaveBeenCalledTimes(5);
 
       // Check that delay was capped at maxDelay

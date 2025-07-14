@@ -1,9 +1,10 @@
+import { logger } from '../logger';
+
 import { getPkgReleases } from '../modules/datasource';
 import type {
   GetPkgReleasesConfig,
   ReleaseResult,
 } from '../modules/datasource/types';
-import { logger } from '../logger';
 
 // Default configuration for retry logic
 const DEFAULT_RETRY_CONFIG = {
@@ -67,7 +68,7 @@ function isRetryableError(error: any): boolean {
   return false;
 }
 
-async function sleep(ms: number): Promise<void> {
+function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
@@ -109,7 +110,7 @@ async function retryWithExponentialBackoff<T>(
           attempt,
           maxAttempts,
           delay,
-          error: error.message || error,
+          error: error.message ?? error,
           errorCode: error.code,
           statusCode: error.statusCode,
         },
@@ -125,7 +126,7 @@ async function retryWithExponentialBackoff<T>(
 }
 
 export const registry = {
-  async getPkgReleases(
+  getPkgReleases(
     config: GetPkgReleasesConfig,
     retryConfig?: RetryConfig,
   ): Promise<ReleaseResult | null> {

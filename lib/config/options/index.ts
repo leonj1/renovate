@@ -1595,17 +1595,6 @@ const options: RenovateOptions[] = [
     env: false,
   },
   {
-    name: 'offsetLevel',
-    description:
-      'Specifies the semantic version level (major, minor, or patch) to apply n-1 versioning offset to.',
-    type: 'string',
-    allowedValues: ['major', 'minor', 'patch'],
-    stage: 'package',
-    parents: ['packageRules'],
-    cli: false,
-    env: false,
-  },
-  {
     name: 'changelogUrl',
     description:
       'Set a custom URL for the changelog. Renovate will put this URL in the PR body text.',
@@ -2501,6 +2490,7 @@ const options: RenovateOptions[] = [
       'Configuration object to define language or manager version constraints.',
     type: 'object',
     default: {},
+    stage: 'package',
     mergeable: true,
     cli: false,
     supportedManagers: [
@@ -2516,6 +2506,37 @@ const options: RenovateOptions[] = [
     additionalProperties: {
       type: 'string',
     },
+  },
+  {
+    name: 'offset',
+    description: 'Offset for N-1 versioning - must be 0 or a negative integer.',
+    type: 'integer',
+    stage: 'package',
+    parents: ['constraints'],
+    cli: false,
+    env: false,
+  },
+  {
+    name: 'offsetLevel',
+    description:
+      'Specifies the semantic version level (major, minor, or patch) to apply n-1 versioning offset to.',
+    type: 'string',
+    allowedValues: ['major', 'minor', 'patch'],
+    stage: 'package',
+    parents: ['constraints'],
+    cli: false,
+    env: false,
+  },
+  {
+    name: 'ignorePrerelease',
+    description:
+      'Whether to ignore pre-release versions when applying N-1 versioning.',
+    type: 'boolean',
+    default: true,
+    stage: 'package',
+    parents: ['constraints'],
+    cli: false,
+    env: false,
   },
   {
     name: 'hostRules',

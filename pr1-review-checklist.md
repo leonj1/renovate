@@ -1,10 +1,12 @@
+<!-- markdownlint-disable MD029 -->
+
 # Code Review Checklist - PR #1: N-1 Versioning Support
 
 ## Overview
 
 This checklist tracks the improvements and issues identified during the code review of PR #1, which adds support for n-1 versioning in Renovate.
 
-**PR URL**: https://github.com/leonj1/renovate/pull/1  
+**PR URL**: <https://github.com/leonj1/renovate/pull/1>  
 **Feature**: Support for specifying versions relative to the latest release using offset constraints
 
 ---
@@ -67,7 +69,7 @@ This checklist tracks the improvements and issues identified during the code rev
 
 24. [x] Ensure offsetLevel and offset work correctly together
 25. [x] Validate that constraints object structure is properly defined
-26. [ ] Add schema validation for the new configuration options
+26. [x] Add schema validation for the new configuration options
 
 ---
 
@@ -80,9 +82,9 @@ This checklist tracks the improvements and issues identified during the code rev
 ### Summary
 
 - **Total Items**: 26
-- **Completed**: 20
+- **Completed**: 21
 - **In Progress**: 0
-- **Remaining**: 6
+- **Remaining**: 5
 
 ---
 

@@ -22,6 +22,7 @@ import { migrateConfig } from './migration';
 import { getOptions } from './options';
 import { resolveConfigPresets } from './presets';
 import { supportedDatasources } from './presets/internal/merge-confidence';
+import { validateConstraintsInRule } from './schemas/n-minus-one-schema';
 import type {
   AllowedParents,
   RenovateConfig,
@@ -424,6 +425,26 @@ export async function validateConfig(
                       topic: 'Configuration Error',
                       message,
                     });
+                  }
+
+                  // Validate constraints for N-1 versioning
+                  if (
+                    resolvedRule.constraints &&
+                    is.plainObject(resolvedRule.constraints)
+                  ) {
+                    const constraintsValidation = validateConstraintsInRule(
+                      resolvedRule.constraints,
+                    );
+                    if (!constraintsValidation.success) {
+                      constraintsValidation.error?.errors.forEach((err) => {
+                        const fieldPath =
+                          err.path.length > 0 ? `.${err.path.join('.')}` : '';
+                        errors.push({
+                          topic: 'Configuration Error',
+                          message: `${currentPath}[${subIndex}].constraints${fieldPath}: ${err.message}`,
+                        });
+                      });
+                    }
                   }
                   // It's too late to apply any of these options once you already have updates determined
                   const preLookupOptions = [

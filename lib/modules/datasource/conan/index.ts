@@ -3,6 +3,7 @@ import { logger } from '../../../logger';
 import { cache } from '../../../util/cache/package/decorator';
 import { GithubHttp } from '../../../util/http/github';
 import { ensureTrailingSlash, joinUrlParts } from '../../../util/url';
+
 import * as allVersioning from '../../versioning';
 import { Datasource } from '../datasource';
 import type {
